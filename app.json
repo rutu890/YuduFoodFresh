@@ -17,8 +17,20 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       }
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
+  "web": {
+  "bundler": "metro",
+  "output": "single",
+  "favicon": "./assets/favicon.png"
+},
+   "plugins": [
+  "expo-image",
+  "expo-status-bar",
+  [
+    "expo-location",
+    {
+      "locationWhenInUsePermission": "Allow YUDU Food to use your location to find nearby restaurants and deliver orders."
     }
+  ]
+]
   }
 }

@@ -1,15 +1,46 @@
+
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/colors';
 
 const tabs = [
-  { name: 'Home', icon: '⌂', route: 'Home' },
-  { name: 'Restaurants', icon: '♜', route: 'Restaurants' },
-  { name: 'Cart', icon: '▢', route: 'Cart' },
-  { name: 'Profile', icon: '♙', route: 'Profile' },
+  {
+    name: 'Home',
+    route: 'Home',
+    icon: 'home-outline',
+    activeIcon: 'home',
+  },
+  {
+    name: 'Restaurants',
+    route: 'Restaurants',
+    icon: 'restaurant-outline',
+    activeIcon: 'restaurant',
+  },
+  {
+    name: 'Cart',
+    route: 'Cart',
+    icon: 'bag-handle-outline',
+    activeIcon: 'bag-handle',
+  },
+  {
+    name: 'Offers',
+    route: 'Offers',
+    icon: 'pricetag-outline',
+    activeIcon: 'pricetag',
+  },
 ];
 
-export default function BottomTabBar({ navigation, active }) {
+export default function BottomTabBar({
+  navigation,
+  active,
+  cartCount = 0,
+}) {
   return (
     <View style={styles.container}>
       {tabs.map((tab) => {
@@ -20,20 +51,35 @@ export default function BottomTabBar({ navigation, active }) {
             key={tab.name}
             style={styles.tab}
             activeOpacity={0.7}
-            onPress={() => {
-              if (tab.route === 'Cart' || tab.route === 'Profile') {
-                return;
-              }
-              navigation.navigate(tab.route);
-            }}
+            onPress={() => navigation.navigate(tab.route)}
           >
-            <View style={[styles.iconWrap, selected && styles.activeIconWrap]}>
-              <Text style={[styles.icon, selected && styles.activeIcon]}>
-                {tab.icon}
-              </Text>
+            <View
+              style={[
+                styles.iconWrap,
+                selected && styles.activeIconWrap,
+              ]}
+            >
+              <Ionicons
+                name={selected ? tab.activeIcon : tab.icon}
+                size={21}
+                color={selected ? colors.teal : '#999999'}
+              />
+
+              {tab.name === 'Cart' && cartCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>
+                    {cartCount > 9 ? '9+' : cartCount}
+                  </Text>
+                </View>
+              )}
             </View>
 
-            <Text style={[styles.label, selected && styles.activeLabel]}>
+            <Text
+              style={[
+                styles.label,
+                selected && styles.activeLabel,
+              ]}
+            >
               {tab.name}
             </Text>
           </TouchableOpacity>
@@ -55,36 +101,55 @@ const styles = StyleSheet.create({
     paddingBottom: 5,
     elevation: 12,
   },
+
   tab: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 3,
   },
+
   iconWrap: {
-    minWidth: 43,
-    height: 30,
+    width: 43,
+    height: 32,
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
   },
+
   activeIconWrap: {
-    backgroundColor: '#F0E8FF',
+    backgroundColor: '#E8F7F4',
   },
-  icon: {
-    fontSize: 23,
-    color: '#9991B2',
-  },
-  activeIcon: {
-    color: '#6336E8',
-    fontWeight: '900',
-  },
+
   label: {
-    color: '#9991B2',
+    color: '#999999',
     fontSize: 10,
+    fontWeight: '500',
   },
+
   activeLabel: {
-    color: '#6336E8',
+    color: colors.teal,
+    fontWeight: '800',
+  },
+
+  badge: {
+    position: 'absolute',
+    right: 1,
+    top: -3,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 9,
+    backgroundColor: colors.watermelon,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.white,
+  },
+
+  badgeText: {
+    color: colors.white,
+    fontSize: 9,
     fontWeight: '800',
   },
 });

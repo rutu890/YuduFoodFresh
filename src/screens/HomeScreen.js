@@ -11,20 +11,25 @@ import {
   FlatList,
   StatusBar,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import FoodImage from '../components/FoodImage';
+import FilterModal from '../components/FilterModal';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../constants/colors';
 import BottomTabBar from '../components/BottomTabBar';
 
 const foodImages = {
-  biryani: 'https://images.unsplash.com/photo-1563379091339-03246963d96c?w=700',
-  pizza: 'https://images.unsplash.com/photo-157 pizza?w=700',
+  biryani:
+    'https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=700',
+
+ pizza: 'https://images.unsplash.com/photo-1571407970349-bc81e7e96d47?w=700',
   burger: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=700',
   dosa: 'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=700',
   curry: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=700',
 };
 
 const categories = [
-  { name: 'Biryani', image: foodImages.biryani },
+  { name: 'Biryani', image: 'https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=700' },
   { name: 'Pizza', image: 'https://images.unsplash.com/photo-1571407970349-bc81e7e96d47?w=300' },
   { name: 'Burgers', image: foodImages.burger },
   { name: 'Dosa', image: foodImages.dosa },
@@ -83,7 +88,7 @@ function SectionHeading({ title, onSeeAll }) {
   );
 }
 
-function SearchBar({ placeholder }) {
+function SearchBar({ placeholder, onFilterPress }) {
   return (
     <View style={styles.searchBar}>
       <Text style={styles.searchIcon}>⌕</Text>
@@ -93,7 +98,11 @@ function SearchBar({ placeholder }) {
         style={styles.searchInput}
         returnKeyType="search"
       />
-      <TouchableOpacity style={styles.filterButton} activeOpacity={0.8}>
+      <TouchableOpacity
+        style={styles.filterButton}
+        onPress={onFilterPress}
+        activeOpacity={0.75}
+      >
         <Text style={styles.filterIcon}>☷</Text>
       </TouchableOpacity>
     </View>
@@ -111,7 +120,11 @@ function RestaurantCard({ item, onFavourite }) {
   return (
     <View style={styles.restaurantCard}>
       <View style={styles.restaurantImageWrap}>
-        <Image source={{ uri: item.image }} style={styles.restaurantImage} />
+        <FoodImage
+          uri={item.image}
+          style={styles.restaurantImage}
+          contentFit="cover"
+        />
         <View style={styles.offerPill}>
           <Text style={styles.offerText}>✦ {item.offer}</Text>
         </View>
@@ -171,8 +184,14 @@ function SkeletonCard() {
 
 export default function HomeScreen({ navigation, route }) {
   const location = route.params?.location;
+
+  // Home screen state
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState('');
+  const [filterVisible, setFilterVisible] = useState(false);
+  const [filters, setFilters] = useState({});
+
+  // Animations
   const entrance = useRef(new Animated.Value(0)).current;
   const bannerFloat = useRef(new Animated.Value(0)).current;
   const toastOpacity = useRef(new Animated.Value(0)).current;
@@ -270,10 +289,17 @@ export default function HomeScreen({ navigation, route }) {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.headerIcon}
-              onPress={() => showToast('You are all caught up!')}
+              style={styles.notificationButton}
+              activeOpacity={0.75}
+              onPress={() => navigation.navigate('Notifications')}
             >
-              <Text style={styles.headerIconText}>♧</Text>
+              <Ionicons
+                name="notifications-outline"
+                size={22}
+                color={colors.ink}
+              />
+
+              <View style={styles.notificationBadge} />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.profileCircle}>
@@ -281,8 +307,10 @@ export default function HomeScreen({ navigation, route }) {
             </TouchableOpacity>
           </View>
 
-          <SearchBar placeholder="Search for dishes or restaurants" />
-
+          <SearchBar
+            placeholder="Search for dishes or restaurants"
+            onFilterPress={() => setFilterVisible(true)}
+          />
           <FlatList
             horizontal
             data={categories}
@@ -298,7 +326,10 @@ export default function HomeScreen({ navigation, route }) {
                 })}
               >
                 <View style={styles.categoryImageBorder}>
-                  <Image source={{ uri: item.image }} style={styles.categoryImage} />
+                  <FoodImage
+                    uri={item.image}
+                    style={styles.categoryImage}
+                  />
                 </View>
                 <Text style={styles.categoryName}>{item.name}</Text>
               </TouchableOpacity>
@@ -320,12 +351,15 @@ export default function HomeScreen({ navigation, route }) {
                 <TouchableOpacity
                   style={styles.orderButton}
                   activeOpacity={0.8}
-                  onPress={() => navigation.navigate('Restaurants')}
+                  onPress={() => navigation.navigate('Offers')}
                 >
                   <Text style={styles.orderButtonText}>Order now</Text>
                 </TouchableOpacity>
               </View>
-              <Image source={{ uri: foodImages.biryani }} style={styles.promoImage} />
+              <FoodImage
+                uri={foodImages.biryani}
+                style={styles.promoImage}
+              />
             </LinearGradient>
           </Animated.View>
 
@@ -386,7 +420,15 @@ export default function HomeScreen({ navigation, route }) {
           <Text style={styles.toastText}>✓  {toast}</Text>
         </Animated.View>
       ) : null}
-
+      <FilterModal
+        visible={filterVisible}
+        onClose={() => setFilterVisible(false)}
+        initialFilters={filters}
+        onApply={(newFilters) => {
+          setFilters(newFilters);
+          showToast('Filters applied');
+        }}
+      />
       <BottomTabBar navigation={navigation} active="Home" />
     </View>
   );
@@ -407,7 +449,7 @@ const styles = StyleSheet.create({
     width: 35, height: 35, borderRadius: 18,
     backgroundColor: '#F1E9FF', alignItems: 'center', justifyContent: 'center',
   },
-  locationPin: { color: '#6336E8', fontSize: 24 },
+  locationPin: { color: '#008C89', fontSize: 24 },
   locationTextWrap: { flex: 1 },
   deliverTo: { color: '#9991AD', fontSize: 10 },
   addressText: { color: '#241B3D', fontSize: 13, fontWeight: '800' },
@@ -416,6 +458,46 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', elevation: 3,
   },
   headerIconText: { fontSize: 22, color: '#241B3D' },
+  notificationButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 22,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+    position: 'relative',
+  },
+
+  notificationBadge: {
+    position: 'absolute',
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: colors.orange,
+    top: 7,
+    right: 8,
+    borderWidth: 1,
+    borderColor: colors.white,
+  },
+
+
+
+  notificationBadge: {
+    position: 'absolute',
+    width: 8,
+    height: 8,
+    borderRadius: 5,
+    backgroundColor: colors.orange,
+    top: 7,
+    right: 8,
+    borderWidth: 1,
+    borderColor: colors.white,
+  },
   profileCircle: {
     width: 37, height: 37, borderRadius: 20, borderWidth: 1.5,
     borderColor: colors.orange, backgroundColor: '#FFF2E9',
@@ -433,7 +515,7 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, paddingHorizontal: 8, fontSize: 12, color: colors.ink },
   filterButton: {
     width: 34, height: 34, borderRadius: 11,
-    backgroundColor: '#6336E8', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#008C89', alignItems: 'center', justifyContent: 'center',
   },
   filterIcon: { color: colors.white, fontSize: 22 },
 
@@ -441,7 +523,7 @@ const styles = StyleSheet.create({
   categoryItem: { alignItems: 'center', width: 59 },
   categoryImageBorder: {
     width: 51, height: 51, borderRadius: 27,
-    borderWidth: 2, borderColor: '#6336E8', padding: 2,
+    borderWidth: 2, borderColor: '#008C89', padding: 2,
   },
   categoryImage: { width: '100%', height: '100%', borderRadius: 25 },
   categoryName: { marginTop: 5, fontSize: 10, color: '#51486A', fontWeight: '600' },
@@ -459,7 +541,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15, paddingVertical: 6, alignSelf: 'flex-start',
     marginTop: 8,
   },
-  orderButtonText: { color: '#6336E8', fontSize: 10, fontWeight: '900' },
+  orderButtonText: { color: '#008C89', fontSize: 10, fontWeight: '900' },
   promoImage: {
     width: 118, height: 118, borderRadius: 60,
     borderWidth: 3, borderColor: colors.white, marginRight: 9,
@@ -470,7 +552,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', marginBottom: 10, marginTop: 1,
   },
   sectionTitle: { color: '#241B3D', fontSize: 17, fontWeight: '900' },
-  seeAll: { color: '#6336E8', fontSize: 11, fontWeight: '700' },
+  seeAll: { color: '#008C89', fontSize: 11, fontWeight: '700' },
 
   restaurantList: { gap: 12, paddingBottom: 16 },
   restaurantCard: { width: 225 },
@@ -483,7 +565,7 @@ const styles = StyleSheet.create({
     position: 'absolute', left: 8, bottom: 8,
     backgroundColor: colors.white, borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4,
   },
-  offerText: { color: '#6336E8', fontSize: 10, fontWeight: '900' },
+  offerText: { color: '#008C89', fontSize: 10, fontWeight: '900' },
   heartButton: {
     position: 'absolute', right: 8, top: 8,
     width: 31, height: 31, borderRadius: 17,
@@ -507,7 +589,7 @@ const styles = StyleSheet.create({
   trendingInfo: { flex: 1 },
   trendingName: { color: '#241B3D', fontSize: 11, fontWeight: '800' },
   trendingRestaurant: { color: '#918AA5', fontSize: 9, marginTop: 2 },
-  trendingPrice: { color: '#6336E8', fontSize: 10, fontWeight: '900', marginTop: 3 },
+  trendingPrice: { color: '#008C89', fontSize: 10, fontWeight: '900', marginTop: 3 },
 
   skeletonCard: { width: 225, marginRight: 12, paddingBottom: 15 },
   skeletonImage: { height: 130, borderRadius: 16, backgroundColor: '#EAE6EF' },

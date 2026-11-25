@@ -14,6 +14,9 @@ import OrderTrackingScreen from '../screens/OrderTrackingScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import MyOrdersScreen from '../screens/MyOrdersScreen';
 import FavoritesScreen from '../screens/FavoritesScreen';
+import ManualAddressScreen from '../screens/ManualAddressScreen';
+import AddressConfirmationScreen from '../screens/AddressConfirmationScreen';
+import ManageAddressesScreen from '../screens/ManageAddressesScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -24,6 +27,19 @@ export default function AppNavigator() {
         <Stack.Screen name="Splash" component={SplashScreen} />
         <Stack.Screen name="Onboarding" component={OnboardingScreen} />
         <Stack.Screen name="Location" component={LocationScreen} />
+        <Stack.Screen
+          name="ManualAddress"
+          component={ManualAddressScreen}
+        />
+
+        <Stack.Screen
+          name="AddressConfirmation"
+          component={AddressConfirmationScreen}
+        />
+        <Stack.Screen
+          name="ManageAddresses"
+          component={ManageAddressesScreen}
+        />
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Restaurants" component={RestaurantsScreen} />
         <Stack.Screen name="Offers" component={OffersScreen} />

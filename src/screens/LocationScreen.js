@@ -160,7 +160,7 @@ export default function LocationScreen({ navigation }) {
       Alert.alert(
         'Unable to get location',
         error.message ||
-          'Something went wrong while detecting your location.',
+        'Something went wrong while detecting your location.',
         [
           { text: 'Cancel', style: 'cancel' },
           {
@@ -350,12 +350,7 @@ export default function LocationScreen({ navigation }) {
       >
         <TouchableOpacity
           style={styles.manualButton}
-          onPress={() =>
-            Alert.alert(
-              'Manual address',
-              'Manual address search will be added in the next step.'
-            )
-          }
+          onPress={() => navigation.navigate('ManualAddress')}
           activeOpacity={0.7}
         >
           <Text style={styles.manualText}>

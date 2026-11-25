@@ -1,4 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+} from 'react';
 import {
   View,
   Text,
@@ -17,12 +23,15 @@ import FilterModal from '../components/FilterModal';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../constants/colors';
 import BottomTabBar from '../components/BottomTabBar';
+import { useFocusEffect } from '@react-navigation/native';
+import { getActiveAddress } from '../utils/addressStorage';
+
 
 const foodImages = {
   biryani:
     'https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=700',
 
- pizza: 'https://images.unsplash.com/photo-1571407970349-bc81e7e96d47?w=700',
+  pizza: 'https://images.unsplash.com/photo-1571407970349-bc81e7e96d47?w=700',
   burger: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=700',
   dosa: 'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=700',
   curry: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=700',
@@ -185,6 +194,28 @@ function SkeletonCard() {
 export default function HomeScreen({ navigation, route }) {
   const location = route.params?.location;
 
+  const [savedActiveAddress, setSavedActiveAddress] = useState(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      const loadActiveAddress = async () => {
+        const saved = await getActiveAddress();
+
+        if (isActive) {
+          setSavedActiveAddress(saved);
+        }
+      };
+
+      loadActiveAddress();
+
+      return () => {
+        isActive = false;
+      };
+    }, [])
+  );
+
   // Home screen state
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState('');
@@ -250,7 +281,19 @@ export default function HomeScreen({ navigation, route }) {
     showToast(isFavourite ? `${name} added to favourites` : 'Removed from favourites');
   };
 
-  const address = location?.formattedAddress || 'Madhapur, Hyderabad';
+  const address =
+    savedActiveAddress?.formattedAddress ||
+    [
+      savedActiveAddress?.houseNumber,
+      savedActiveAddress?.street,
+      savedActiveAddress?.area,
+      savedActiveAddress?.city,
+      savedActiveAddress?.postalCode,
+    ]
+      .filter(Boolean)
+      .join(', ') ||
+    location?.formattedAddress ||
+    'Add delivery address';
 
   return (
     <View style={styles.container}>
@@ -274,7 +317,7 @@ export default function HomeScreen({ navigation, route }) {
           <View style={styles.topHeader}>
             <TouchableOpacity
               style={styles.locationArea}
-              onPress={() => navigation.navigate('Location')}
+              onPress={() => navigation.navigate('ManageAddresses')}
               activeOpacity={0.7}
             >
               <View style={styles.locationIconWrap}>

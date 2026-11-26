@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
@@ -10,6 +11,11 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { colors } from '../constants/colors';
+import {
+  addAddress,
+  updateAddress,
+  selectAddress,
+} from '../utils/addressStorage';
 
 const addressTypes = [
   { label: 'Home', icon: '⌂' },
@@ -17,12 +23,25 @@ const addressTypes = [
   { label: 'Other', icon: '⌖' },
 ];
 
+
+
 export default function AddressConfirmationScreen({
   navigation,
   route,
 }) {
   const location = route.params?.location;
-  const [selectedType, setSelectedType] = useState('Home');
+  const editAddress = route.params?.editAddress || null;
+  const isEditMode = Boolean(editAddress);
+  const [selectedType, setSelectedType] = useState(
+    editAddress?.addressType || editAddress?.type || 'Home'
+  );
+
+  const [customAddressName, setCustomAddressName] = useState(
+    editAddress?.customAddressName || ''
+  );
+  const [nameError, setNameError] = useState('');
+
+
 
   if (!location) {
     return (
@@ -35,32 +54,71 @@ export default function AddressConfirmationScreen({
     );
   }
 
-  const handleConfirm = () => {
-    const confirmedLocation = {
-      ...location,
-      addressType: selectedType,
-    };
+  const handleConfirm = async () => {
+    if (selectedType === 'Other' && !customAddressName.trim()) {
+      setNameError('Please enter a name for this address.');
+      return;
+    }
 
-    Alert.alert(
-      'Address saved',
-      'Your delivery address has been selected successfully.',
-      [
-        {
-          text: 'Continue',
-          onPress: () => {
-            navigation.reset({
-              index: 0,
-              routes: [
-                {
-                  name: 'Home',
-                  params: { location: confirmedLocation },
-                },
-              ],
-            });
+    try {
+      const addressToSave = {
+        ...location,
+        id: editAddress?.id || location.id || `address_${Date.now()}`,
+        addressType:
+          editAddress?.addressType ||
+          editAddress?.type ||
+          selectedType,
+        customAddressName:
+          selectedType === 'Other'
+            ? customAddressName.trim() ||
+            editAddress?.customAddressName ||
+            ''
+            : '',
+        isDefault: editAddress
+          ? Boolean(editAddress.isDefault)
+          : false,
+      };
+
+      if (isEditMode) {
+        await updateAddress(addressToSave);
+      } else {
+        await addAddress(addressToSave);
+      }
+
+      // Only make it active if the user explicitly chooses to do so.
+      // Do not automatically change the default address when editing.
+
+      await selectAddress(addressToSave);
+
+
+      Alert.alert(
+        'Address saved successfully!',
+        'Your delivery address is ready.',
+        [
+          {
+            text: 'Continue',
+            onPress: () => {
+              navigation.reset({
+                index: 0,
+                routes: [
+                  {
+                    name: 'Home',
+                    params: {
+                      location: addressToSave,
+                    },
+                  },
+                ],
+              });
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    } catch (error) {
+      Alert.alert(
+        'Unable to save address',
+        'Please try again.'
+      );
+    }
   };
 
   return (
@@ -76,7 +134,9 @@ export default function AddressConfirmationScreen({
         </TouchableOpacity>
 
         <View>
-          <Text style={styles.headerTitle}>Confirm address</Text>
+          <Text style={styles.headerTitle}>
+            {isEditMode ? 'Update address' : 'Confirm address'}
+          </Text>
           <Text style={styles.headerSubtitle}>
             Make sure your delivery details are correct
           </Text>
@@ -147,7 +207,13 @@ export default function AddressConfirmationScreen({
                   styles.typeCard,
                   selected && styles.selectedTypeCard,
                 ]}
-                onPress={() => setSelectedType(type.label)}
+                onPress={() => {
+                  setSelectedType(type.label);
+                  setNameError('');
+                  if (type.label !== 'Other') {
+                    setCustomAddressName('');
+                  }
+                }}
                 activeOpacity={0.8}
               >
                 <Text
@@ -178,6 +244,37 @@ export default function AddressConfirmationScreen({
           })}
         </View>
 
+        {selectedType === 'Other' && (
+          <View style={styles.customNameContainer}>
+            <Text style={styles.customNameLabel}>
+              Give this address a name *
+            </Text>
+
+            <TextInput
+              value={customAddressName}
+              onChangeText={(value) => {
+                setCustomAddressName(value);
+                if (value.trim()) setNameError('');
+              }}
+              placeholder="e.g. Parents' House"
+              placeholderTextColor="#A5A5A5"
+              maxLength={30}
+              autoCapitalize="words"
+              style={[
+                styles.customNameInput,
+                nameError ? styles.inputError : null,
+              ]}
+            />
+
+            {nameError ? (
+              <Text style={styles.errorText}>{nameError}</Text>
+            ) : (
+              <Text style={styles.inputHint}>
+                Choose a name that helps you identify this address.
+              </Text>
+            )}
+          </View>
+        )}
         <View style={styles.deliveryNote}>
           <Text style={styles.deliveryNoteTitle}>
             Delivery tip
@@ -196,7 +293,7 @@ export default function AddressConfirmationScreen({
           activeOpacity={0.85}
         >
           <Text style={styles.confirmText}>
-            CONFIRM ADDRESS & CONTINUE
+            {isEditMode ? 'UPDATE ADDRESS' : 'CONFIRM ADDRESS & CONTINUE'}
           </Text>
           <Text style={styles.confirmArrow}>→</Text>
         </TouchableOpacity>
@@ -444,5 +541,47 @@ const styles = StyleSheet.create({
     fontSize: 21,
     position: 'absolute',
     right: 18,
+  },
+  customNameContainer: {
+    marginTop: 18,
+    padding: 15,
+    backgroundColor: colors.white,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+
+  customNameLabel: {
+    color: colors.ink,
+    fontSize: 13,
+    fontWeight: '800',
+    marginBottom: 10,
+  },
+
+  customNameInput: {
+    height: 49,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.soft,
+    paddingHorizontal: 13,
+    color: colors.ink,
+    fontSize: 13,
+  },
+
+  inputError: {
+    borderColor: '#E53935',
+  },
+
+  errorText: {
+    color: '#E53935',
+    fontSize: 11,
+    marginTop: 7,
+  },
+
+  inputHint: {
+    color: colors.muted,
+    fontSize: 10,
+    marginTop: 7,
   },
 });

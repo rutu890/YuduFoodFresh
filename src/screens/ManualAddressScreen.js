@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -12,23 +12,70 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { colors } from '../constants/colors';
 import { searchManualAddress } from '../services/locationService';
 
-export default function ManualAddressScreen({ navigation }) {
+export default function ManualAddressScreen({ navigation, route }) {
+  const editAddress = route.params?.editAddress || null;
+  const mapLocation = route.params?.mapLocation || null;
+
+  const isEditMode = Boolean(editAddress);
+
   const [searchText, setSearchText] = useState('');
   const [searching, setSearching] = useState(false);
-  const [coordinates, setCoordinates] = useState(null);
+
+  const [coordinates, setCoordinates] = useState(() => {
+    const latitude = Number(editAddress?.latitude);
+    const longitude = Number(editAddress?.longitude);
+
+    return Number.isFinite(latitude) &&
+      Number.isFinite(longitude) &&
+      editAddress?.latitude != null &&
+      editAddress?.longitude != null
+      ? { latitude, longitude }
+      : null;
+  });
 
   const [form, setForm] = useState({
-    houseNumber: '',
-    street: '',
-    area: '',
-    landmark: '',
-    city: '',
-    postalCode: '',
+    houseNumber: editAddress?.houseNumber || '',
+    street: editAddress?.street || editAddress?.road || '',
+    area: editAddress?.area || editAddress?.locality || '',
+    landmark: editAddress?.landmark || '',
+    city: editAddress?.city || '',
+    postalCode: editAddress?.postalCode || editAddress?.pinCode || '',
   });
+
+  // Receive a location returned by the map picker.
+  useEffect(() => {
+    if (!mapLocation) return;
+
+    const latitude = Number(mapLocation.latitude);
+    const longitude = Number(mapLocation.longitude);
+
+    if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+      setCoordinates({ latitude, longitude });
+    }
+
+    setForm((previous) => ({
+      ...previous,
+      street: mapLocation.street || mapLocation.road || previous.street,
+      area:
+        mapLocation.area ||
+        mapLocation.locality ||
+        mapLocation.district ||
+        previous.area,
+      city: mapLocation.city || previous.city,
+      postalCode:
+        mapLocation.postalCode ||
+        mapLocation.pinCode ||
+        previous.postalCode,
+      landmark: mapLocation.landmark || previous.landmark,
+    }));
+
+    navigation.setParams({ mapLocation: undefined });
+  }, [mapLocation, navigation]);
 
   const updateField = (field, value) => {
     setForm((previous) => ({
@@ -48,16 +95,18 @@ export default function ManualAddressScreen({ navigation }) {
 
       const result = await searchManualAddress(searchText);
 
-      setCoordinates(result);
+      setCoordinates({
+        latitude: Number(result.latitude),
+        longitude: Number(result.longitude),
+      });
 
-      // Use reverse geocoding to obtain structured address details.
       try {
-        const addresses = await import('expo-location').then((module) =>
-          module.reverseGeocodeAsync({
-            latitude: result.latitude,
-            longitude: result.longitude,
-          })
-        );
+        const Location = await import('expo-location');
+
+        const addresses = await Location.reverseGeocodeAsync({
+          latitude: result.latitude,
+          longitude: result.longitude,
+        });
 
         const address = addresses?.[0];
 
@@ -69,6 +118,7 @@ export default function ManualAddressScreen({ navigation }) {
               previous.area ||
               address.district ||
               address.subregion ||
+              address.city ||
               '',
             city:
               previous.city ||
@@ -80,7 +130,7 @@ export default function ManualAddressScreen({ navigation }) {
           }));
         }
       } catch {
-        // The address can still be entered manually if reverse geocoding fails.
+        // The user can still enter address details manually.
       }
 
       Alert.alert('Location found', 'We found your address location.');
@@ -96,6 +146,24 @@ export default function ManualAddressScreen({ navigation }) {
     }
   };
 
+  const handlePickMapLocation = () => {
+   navigation.navigate('MapLocationPicker', {
+  address: editAddress
+    ? {
+        ...editAddress,
+        ...form,
+        ...(coordinates || {}),
+      }
+    : {
+        ...form,
+        ...(coordinates || {}),
+      },
+  editAddress: editAddress || null,
+  returnTo: 'ManualAddress',
+});
+  };
+
+ 
   const handleContinue = () => {
     const requiredFields = [
       ['houseNumber', 'House / Flat number'],
@@ -118,6 +186,7 @@ export default function ManualAddressScreen({ navigation }) {
     }
 
     const location = {
+      ...editAddress,
       ...form,
       postalCode: form.postalCode.trim(),
       latitude: coordinates?.latitude ?? null,
@@ -128,14 +197,16 @@ export default function ManualAddressScreen({ navigation }) {
         form.area,
         form.landmark,
         form.city,
-        form.postalCode,
-      ]
-        .filter((value) => value.trim())
-        .join(', '),
+        form.postalCode.trim(),
+      ].filter(Boolean).join(', '),
       source: 'manual',
     };
 
-    navigation.navigate('AddressConfirmation', { location });
+    navigation.navigate('AddressConfirmation', {
+      location,
+      editAddress: isEditMode ? editAddress : null,
+      returnTo: route.params?.returnTo || 'ManageAddresses',
+    });
   };
 
   const renderField = (
@@ -145,21 +216,21 @@ export default function ManualAddressScreen({ navigation }) {
     options = {}
   ) => (
     <View style={styles.fieldContainer}>
-      <Text style={styles.fieldLabel}>
-        {label}
-        {options.required ? ' *' : ''}
-      </Text>
-
+      <Text style={styles.fieldLabel}>{label}</Text>
       <TextInput
         value={form[field]}
         onChangeText={(value) => updateField(field, value)}
         placeholder={placeholder}
         placeholderTextColor="#A5A5A5"
-        style={[styles.input, options.multiline && styles.multilineInput]}
+        style={[
+          styles.input,
+          options.multiline && styles.multilineInput,
+        ]}
         multiline={options.multiline || false}
         keyboardType={options.keyboardType || 'default'}
-        autoCapitalize={options.autoCapitalize || 'sentences'}
         maxLength={options.maxLength}
+        autoCapitalize={options.autoCapitalize || 'words'}
+        textAlignVertical={options.multiline ? 'top' : 'center'}
       />
     </View>
   );
@@ -172,18 +243,22 @@ export default function ManualAddressScreen({ navigation }) {
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
+        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
+            activeOpacity={0.75}
           >
             <Text style={styles.backIcon}>‹</Text>
           </TouchableOpacity>
 
           <View>
-            <Text style={styles.headerTitle}>Add delivery address</Text>
+            <Text style={styles.headerTitle}>
+              {isEditMode ? 'Edit delivery address' : 'Add delivery address'}
+            </Text>
             <Text style={styles.headerSubtitle}>
-              Where should we deliver your food?
+              Enter your complete delivery details
             </Text>
           </View>
         </View>
@@ -193,20 +268,20 @@ export default function ManualAddressScreen({ navigation }) {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.content}
         >
+          {/* Address Search */}
           <View style={styles.searchCard}>
             <Text style={styles.sectionTitle}>Find your location</Text>
-
             <Text style={styles.helperText}>
-              Search your address, street or nearby landmark.
+              Search your area or street to identify your location.
             </Text>
 
             <View style={styles.searchRow}>
               <TextInput
+                style={styles.searchInput}
                 value={searchText}
                 onChangeText={setSearchText}
-                placeholder="Search area or address"
+                placeholder="Search area, street or landmark"
                 placeholderTextColor="#A5A5A5"
-                style={styles.searchInput}
                 returnKeyType="search"
                 onSubmitEditing={handleSearch}
               />
@@ -215,9 +290,10 @@ export default function ManualAddressScreen({ navigation }) {
                 style={styles.searchButton}
                 onPress={handleSearch}
                 disabled={searching}
+                activeOpacity={0.8}
               >
                 {searching ? (
-                  <ActivityIndicator color={colors.white} />
+                  <ActivityIndicator color={colors.white} size="small" />
                 ) : (
                   <Text style={styles.searchButtonText}>Search</Text>
                 )}
@@ -226,67 +302,82 @@ export default function ManualAddressScreen({ navigation }) {
 
             {coordinates && (
               <Text style={styles.foundText}>
-                ✓ Location coordinates found
+                ✓ Location coordinates detected
               </Text>
             )}
+
+            <TouchableOpacity
+              style={styles.mapPickerButton}
+              onPress={handlePickMapLocation}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="map-outline" size={19} color={colors.teal} />
+              <Text style={styles.mapPickerButtonText}>
+                Select exact location on map
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={colors.teal}
+              />
+            </TouchableOpacity>
           </View>
 
-          <Text style={styles.sectionHeading}>Delivery details</Text>
+          {/* Address Details */}
+          <Text style={styles.sectionHeading}>Delivery address details</Text>
 
           {renderField(
-            'House / Flat / Apartment',
+            'House / Flat number *',
             'houseNumber',
-            'e.g. Flat 42, Building A',
-            { required: true }
+            'e.g. Flat 204, Building A'
           )}
 
           {renderField(
-            'Street / Road',
+            'Street / Road *',
             'street',
-            'e.g. Road No. 3',
-            { required: true }
+            'Enter street or road name'
           )}
 
           {renderField(
-            'Area / Locality',
+            'Area / Locality *',
             'area',
-            'e.g. Madhapur',
-            { required: true }
+            'Enter your area or locality'
           )}
 
           {renderField(
-            'Landmark',
+            'Landmark (Optional)',
             'landmark',
-            'e.g. Near Metro Station'
+            'Nearby landmark'
           )}
 
           {renderField(
-            'City',
+            'City *',
             'city',
-            'Enter your city',
-            { required: true }
+            'Enter city'
           )}
 
           {renderField(
-            'PIN code',
+            'PIN Code *',
             'postalCode',
-            '6-digit PIN code',
-            {
-              required: true,
-              keyboardType: 'number-pad',
-              maxLength: 6,
-            }
+            'Enter 6-digit PIN code',
+            { keyboardType: 'number-pad', maxLength: 6 }
           )}
 
           <View style={styles.infoCard}>
-            <Text style={styles.infoIcon}>ⓘ</Text>
+            <Ionicons
+              name="information-circle"
+              size={19}
+              color={colors.orangeDeep}
+              style={styles.infoIcon}
+            />
             <Text style={styles.infoText}>
-              Your address will be used to show restaurants and delivery
-              options available in your area.
+              Make sure your address details are correct so your delivery
+              partner can find you easily.
             </Text>
           </View>
         </ScrollView>
 
+        {/* Footer */}
         <View style={styles.footer}>
           <TouchableOpacity
             style={styles.continueButton}
@@ -303,6 +394,7 @@ export default function ManualAddressScreen({ navigation }) {
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {

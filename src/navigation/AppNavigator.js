@@ -17,6 +17,8 @@ import FavoritesScreen from '../screens/FavoritesScreen';
 import ManualAddressScreen from '../screens/ManualAddressScreen';
 import AddressConfirmationScreen from '../screens/AddressConfirmationScreen';
 import ManageAddressesScreen from '../screens/ManageAddressesScreen';
+import MapLocationPickerScreen from '../screens/MapLocationPickerScreen';
+
 
 const Stack = createNativeStackNavigator();
 
@@ -39,6 +41,11 @@ export default function AppNavigator() {
         <Stack.Screen
           name="ManageAddresses"
           component={ManageAddressesScreen}
+        />
+
+        <Stack.Screen
+          name="MapLocationPicker"
+          component={MapLocationPickerScreen}
         />
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Restaurants" component={RestaurantsScreen} />

@@ -27,6 +27,19 @@ const ADDRESS_ICONS = {
   Other: 'location-outline',
 };
 
+const getAddressLabel = (address) => {
+  const type = address.addressType || address.type || 'Other';
+
+  if (type === 'Other') {
+    return address.customAddressName?.trim() || 'Other';
+  }
+
+  return type;
+};
+
+const getAddressType = (address) =>
+  address.addressType || address.type || 'Other';
+
 export default function ManageAddressesScreen({ navigation, route }) {
   const [addresses, setAddresses] = useState([]);
   const [activeAddress, setActiveAddressState] = useState(null);
@@ -57,6 +70,13 @@ export default function ManageAddressesScreen({ navigation, route }) {
     }, [loadAddresses])
   );
 
+  const handlePickExactLocation = (address) => {
+    navigation.navigate('MapLocationPicker', {
+      address,
+      returnTo: 'ManageAddresses',
+    });
+  };
+
   const handleSelect = async (address) => {
     try {
       setUpdatingId(address.id);
@@ -80,7 +100,11 @@ export default function ManageAddressesScreen({ navigation, route }) {
   const handleDelete = (address) => {
     Alert.alert(
       'Delete address?',
-      `Are you sure you want to delete your ${address.type || 'saved'} address?`,
+      `Are you sure you want to delete your ${address.customAddressName ||
+      address.addressType ||
+      address.type ||
+      'saved'
+      } address?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -116,11 +140,11 @@ export default function ManageAddressesScreen({ navigation, route }) {
   const formatAddress = (address) =>
     [
       address.houseNumber,
-      address.street,
-      address.area,
+      address.street || address.road,
+      address.area || address.locality,
       address.landmark,
       address.city,
-      address.postalCode,
+      address.postalCode || address.pinCode,
     ]
       .filter(Boolean)
       .join(', ');
@@ -204,7 +228,7 @@ export default function ManageAddressesScreen({ navigation, route }) {
                 >
                   <View style={styles.addressIcon}>
                     <Ionicons
-                      name={ADDRESS_ICONS[address.type] || 'location-outline'}
+                      name={ADDRESS_ICONS[getAddressType(address)] || 'location-outline'}
                       size={22}
                       color={isActive ? colors.orangeDeep : colors.teal}
                     />
@@ -213,7 +237,7 @@ export default function ManageAddressesScreen({ navigation, route }) {
                   <View style={styles.addressDetails}>
                     <View style={styles.nameRow}>
                       <Text style={styles.addressType}>
-                        {address.type || 'Other'}
+                        {getAddressLabel(address)}
                       </Text>
 
                       {isActive && (
@@ -249,16 +273,14 @@ export default function ManageAddressesScreen({ navigation, route }) {
 
                 <View style={styles.cardDivider} />
 
+
                 <View style={styles.actionRow}>
                   <TouchableOpacity
                     style={styles.actionButton}
                     onPress={() => handleEditAddress(address)}
+                    activeOpacity={0.75}
                   >
-                    <Ionicons
-                      name="create-outline"
-                      size={16}
-                      color={colors.teal}
-                    />
+                    <Ionicons name="create-outline" size={16} color={colors.teal} />
                     <Text style={styles.editText}>Edit</Text>
                   </TouchableOpacity>
 
@@ -267,15 +289,25 @@ export default function ManageAddressesScreen({ navigation, route }) {
                   <TouchableOpacity
                     style={styles.actionButton}
                     onPress={() => handleDelete(address)}
+                    activeOpacity={0.75}
                   >
-                    <Ionicons
-                      name="trash-outline"
-                      size={16}
-                      color="#D94A45"
-                    />
+                    <Ionicons name="trash-outline" size={16} color="#D94A45" />
                     <Text style={styles.deleteText}>Delete</Text>
                   </TouchableOpacity>
                 </View>
+
+                <TouchableOpacity
+                  style={styles.mapLocationButton}
+                  onPress={() => handlePickExactLocation(address)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="map-outline" size={17} color={colors.teal} />
+                  <Text style={styles.mapLocationButtonText}>
+                    Set exact delivery location
+                  </Text>
+                  <Ionicons name="chevron-forward" size={17} color={colors.muted} />
+                </TouchableOpacity>
+
               </View>
             );
           })
@@ -570,5 +602,23 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 10,
     lineHeight: 16,
+  },
+  mapLocationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 12,
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: '#EAF7F4',
+  },
+
+  mapLocationButtonText: {
+    flex: 1,
+    color: colors.tealDeep,
+    fontSize: 11,
+    fontWeight: '800',
   },
 });

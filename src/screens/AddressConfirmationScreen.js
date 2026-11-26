@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,9 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  Modal,
+  Animated,
+  ActivityIndicator,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { colors } from '../constants/colors';
@@ -16,6 +19,7 @@ import {
   updateAddress,
   selectAddress,
 } from '../utils/addressStorage';
+import { Ionicons } from '@expo/vector-icons';
 
 const addressTypes = [
   { label: 'Home', icon: '⌂' },
@@ -40,7 +44,11 @@ export default function AddressConfirmationScreen({
     editAddress?.customAddressName || ''
   );
   const [nameError, setNameError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
 
+  const successScale = useRef(new Animated.Value(0.85)).current;
+  const successOpacity = useRef(new Animated.Value(0)).current;
 
 
   if (!location) {
@@ -55,28 +63,28 @@ export default function AddressConfirmationScreen({
   }
 
   const handleConfirm = async () => {
+    if (saving) return;
+
+    if (!location) {
+      Alert.alert('Address missing', 'Please enter your delivery address again.');
+      return;
+    }
+
     if (selectedType === 'Other' && !customAddressName.trim()) {
       setNameError('Please enter a name for this address.');
       return;
     }
 
     try {
+      setSaving(true);
+
       const addressToSave = {
         ...location,
         id: editAddress?.id || location.id || `address_${Date.now()}`,
-        addressType:
-          editAddress?.addressType ||
-          editAddress?.type ||
-          selectedType,
+        addressType: selectedType,
         customAddressName:
-          selectedType === 'Other'
-            ? customAddressName.trim() ||
-            editAddress?.customAddressName ||
-            ''
-            : '',
-        isDefault: editAddress
-          ? Boolean(editAddress.isDefault)
-          : false,
+          selectedType === 'Other' ? customAddressName.trim() : '',
+        isDefault: editAddress ? Boolean(editAddress.isDefault) : false,
       };
 
       if (isEditMode) {
@@ -85,41 +93,64 @@ export default function AddressConfirmationScreen({
         await addAddress(addressToSave);
       }
 
-      // Only make it active if the user explicitly chooses to do so.
-      // Do not automatically change the default address when editing.
-
       await selectAddress(addressToSave);
 
+      setSuccessVisible(true);
+
+      Animated.parallel([
+        Animated.spring(successScale, {
+          toValue: 1,
+          friction: 6,
+          tension: 65,
+          useNativeDriver: true,
+        }),
+        Animated.timing(successOpacity, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+    } catch (error) {
+      console.error('Address confirmation failed:', error);
 
       Alert.alert(
-        'Address saved successfully!',
-        'Your delivery address is ready.',
-        [
-          {
-            text: 'Continue',
-            onPress: () => {
-              navigation.reset({
-                index: 0,
-                routes: [
-                  {
-                    name: 'Home',
-                    params: {
-                      location: addressToSave,
-                    },
-                  },
-                ],
-              });
-            },
-          },
-        ]
-      );
-    } catch (error) {
-      Alert.alert(
         'Unable to save address',
-        'Please try again.'
+        'Something went wrong while saving your address. Please try again.'
       );
+    } finally {
+      setSaving(false);
     }
   };
+
+  const handleSuccessContinue = () => {
+    setSuccessVisible(false);
+
+    if (isEditMode) {
+      navigation.navigate('ManageAddresses');
+      return;
+    }
+
+    navigation.reset({
+      index: 0,
+      routes: [
+        {
+          name: 'Home',
+          params: {
+            location: {
+              ...location,
+              addressType: selectedType,
+              customAddressName:
+                selectedType === 'Other'
+                  ? customAddressName.trim()
+                  : '',
+            },
+          },
+        },
+      ],
+    });
+  };
+
 
   return (
     <View style={styles.container}>
@@ -288,16 +319,74 @@ export default function AddressConfirmationScreen({
 
       <View style={styles.footer}>
         <TouchableOpacity
-          style={styles.confirmButton}
+          style={[
+            styles.confirmButton,
+            saving && { opacity: 0.7 },
+          ]}
           onPress={handleConfirm}
+          disabled={saving}
           activeOpacity={0.85}
         >
-          <Text style={styles.confirmText}>
-            {isEditMode ? 'UPDATE ADDRESS' : 'CONFIRM ADDRESS & CONTINUE'}
-          </Text>
-          <Text style={styles.confirmArrow}>→</Text>
+          {saving ? (
+            <ActivityIndicator color={colors.white} />
+          ) : (
+            <>
+              <Text style={styles.confirmText}>
+                {isEditMode ? 'UPDATE ADDRESS' : 'CONFIRM ADDRESS & CONTINUE'}
+              </Text>
+              <Text style={styles.confirmArrow}>→</Text>
+            </>
+          )}
         </TouchableOpacity>
       </View>
+
+      <Modal
+        visible={successVisible}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => { }}
+      >
+        <View style={styles.successOverlay}>
+          <Animated.View
+            style={[
+              styles.successPopup,
+              {
+                opacity: successOpacity,
+                transform: [{ scale: successScale }],
+              },
+            ]}
+          >
+            <View style={styles.successPopupIcon}>
+              <Ionicons
+                name="checkmark"
+                size={38}
+                color={colors.white}
+              />
+            </View>
+
+            <Text style={styles.successPopupTitle}>
+              Address saved successfully!
+            </Text>
+
+            <Text style={styles.successPopupDescription}>
+              Your {selectedType.toLowerCase()} address is ready for delivery.
+            </Text>
+
+            <TouchableOpacity
+              style={styles.successPopupButton}
+              onPress={handleSuccessContinue}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.successPopupButtonText}>
+                CONTINUE
+              </Text>
+              <Ionicons name="arrow-forward" size={18} color={colors.white} />
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -584,4 +673,64 @@ const styles = StyleSheet.create({
     fontSize: 10,
     marginTop: 7,
   },
+  successOverlay: {
+  flex: 1,
+  backgroundColor: 'rgba(36, 36, 36, 0.45)',
+  justifyContent: 'center',
+  alignItems: 'center',
+  padding: 25,
+},
+
+successPopup: {
+  width: '100%',
+  maxWidth: 380,
+  backgroundColor: colors.white,
+  borderRadius: 24,
+  padding: 25,
+  alignItems: 'center',
+  elevation: 12,
+},
+
+successPopupIcon: {
+  width: 75,
+  height: 75,
+  borderRadius: 40,
+  backgroundColor: colors.teal,
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginBottom: 18,
+},
+
+successPopupTitle: {
+  fontSize: 19,
+  fontWeight: '900',
+  color: colors.ink,
+  textAlign: 'center',
+},
+
+successPopupDescription: {
+  fontSize: 12,
+  color: colors.muted,
+  textAlign: 'center',
+  lineHeight: 19,
+  marginTop: 9,
+},
+
+successPopupButton: {
+  width: '100%',
+  height: 50,
+  borderRadius: 13,
+  backgroundColor: colors.orange,
+  flexDirection: 'row',
+  justifyContent: 'center',
+  alignItems: 'center',
+  gap: 10,
+  marginTop: 23,
+},
+
+successPopupButtonText: {
+  color: colors.white,
+  fontSize: 12,
+  fontWeight: '900',
+},
 });

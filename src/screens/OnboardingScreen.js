@@ -6,10 +6,10 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  Dimensions,
   TouchableOpacity,
   Animated,
   StatusBar,
+  useWindowDimensions,
 } from 'react-native';
 
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,7 +17,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../constants/colors';
 import { onboardingSlides } from '../constants/onboardingSlides';
 
-const { width, height } = Dimensions.get('window');
+// const { width, height } = Dimensions.get('window');
 
 export default function OnboardingScreen({ navigation }) {
   const listRef = useRef(null);
@@ -31,6 +31,8 @@ export default function OnboardingScreen({ navigation }) {
   const illustrationScale = useRef(new Animated.Value(0.65)).current;
   const illustrationOpacity = useRef(new Animated.Value(0)).current;
   const illustrationFloat = useRef(new Animated.Value(0)).current;
+
+  const { width, height } = useWindowDimensions();
 
   // Sparkle animation
   const sparkleScale = useRef(new Animated.Value(0.5)).current;
@@ -141,9 +143,14 @@ export default function OnboardingScreen({ navigation }) {
       return;
     }
 
+    const nextIndex = activeIndex + 1;
+
+    setActiveIndex(nextIndex);
+
     listRef.current?.scrollToIndex({
-      index: activeIndex + 1,
+      index: nextIndex,
       animated: true,
+      viewPosition: 0,
     });
   };
 
@@ -152,9 +159,14 @@ export default function OnboardingScreen({ navigation }) {
   };
 
   const handlePagination = (index) => {
+    if (index < 0 || index >= onboardingSlides.length) return;
+
+    setActiveIndex(index);
+
     listRef.current?.scrollToIndex({
       index,
       animated: true,
+      viewPosition: 0,
     });
   };
 
@@ -168,8 +180,8 @@ export default function OnboardingScreen({ navigation }) {
               index === 0
                 ? ['#FFE1C7', '#FFF0D8', '#DDF5FA']
                 : index === 1
-                ? ['#FFE1E1', '#FFF0E9', '#E4F5E9']
-                : ['#DDF4ED', '#EAF5FF', '#FFF0D8']
+                  ? ['#FFE1E1', '#FFF0E9', '#E4F5E9']
+                  : ['#DDF4ED', '#EAF5FF', '#FFF0D8']
             }
             style={styles.illustration}
           >
@@ -296,6 +308,12 @@ export default function OnboardingScreen({ navigation }) {
           offset: width * index,
           index,
         })}
+        onScrollToIndexFailed={(info) => {
+          listRef.current?.scrollToOffset({
+            offset: info.index * width,
+            animated: true,
+          });
+        }}
         extraData={activeIndex}
       />
 
@@ -359,16 +377,17 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  slide: {
-    width,
-    flex: 1,
-  },
+ slide: {
+  flex: 1,
+  width: '100%',
+},
 
-  illustrationWrapper: {
-    height: height * 0.46,
-    paddingHorizontal: 22,
-    paddingTop: 45,
-  },
+illustrationWrapper: {
+  height: '46%',
+  minHeight: 220,
+  paddingHorizontal: 22,
+  paddingTop: 45,
+},
 
   illustration: {
     flex: 1,

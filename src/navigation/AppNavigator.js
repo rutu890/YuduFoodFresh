@@ -18,7 +18,7 @@ import ManualAddressScreen from '../screens/ManualAddressScreen';
 import AddressConfirmationScreen from '../screens/AddressConfirmationScreen';
 import ManageAddressesScreen from '../screens/ManageAddressesScreen';
 import MapLocationPickerScreen from '../screens/MapLocationPickerScreen';
-
+import OrderUpdateDetailsScreen from '../screens/OrderUpdateDetailsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -33,7 +33,10 @@ export default function AppNavigator() {
           name="ManualAddress"
           component={ManualAddressScreen}
         />
-
+        <Stack.Screen
+          name="OrderUpdateDetails"
+          component={OrderUpdateDetailsScreen}
+        />
         <Stack.Screen
           name="AddressConfirmation"
           component={AddressConfirmationScreen}

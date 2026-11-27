@@ -117,6 +117,7 @@ export default function NotificationsScreen({ navigation }) {
     }, 1800);
   };
 
+
   const handleNotificationPress = (notification) => {
     setNotifications((previous) =>
       previous.map((item) =>
@@ -130,11 +131,17 @@ export default function NotificationsScreen({ navigation }) {
       notification.category === 'Orders' ||
       notification.category === 'Delivery'
     ) {
-      navigation.navigate('OrderUpdateDetails', {
-        notification,
+      navigation.navigate('OrderUpdateDetails', { notification });
+      return;
+    }
+
+    if (notification.category === 'Offers') {
+      navigation.navigate('Offers', {
+        couponCode: notification.couponCode,
       });
     }
   };
+
 
   const markAllAsRead = () => {
     if (unreadCount === 0) return;
@@ -276,9 +283,9 @@ export default function NotificationsScreen({ navigation }) {
                 category === 'All'
                   ? unreadCount
                   : notifications.filter(
-                      (item) =>
-                        item.category === category && item.unread
-                    ).length;
+                    (item) =>
+                      item.category === category && item.unread
+                  ).length;
 
               return (
                 <TouchableOpacity

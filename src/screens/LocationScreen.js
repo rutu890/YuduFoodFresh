@@ -18,6 +18,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { colors } from '../constants/colors';
 import { getCurrentDeliveryLocation } from '../services/locationService';
+import {
+  addAddress,
+  selectAddress,
+} from '../utils/addressStorage';
+
 
 export default function LocationScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
@@ -174,11 +179,40 @@ export default function LocationScreen({ navigation }) {
     }
   };
 
-  const handleContinue = () => {
-    if (!location) return;
+ const handleContinue = async () => {
+  if (!location) return;
 
-    navigation.replace('Home', { location });
-  };
+  try {
+    const addressToSave = {
+      ...location,
+      addressType: 'Home',
+      type: 'Home',
+      isDefault: true,
+    };
+
+    const updatedAddresses = await addAddress(addressToSave);
+    const savedAddress = updatedAddresses[updatedAddresses.length - 1];
+
+    await selectAddress(savedAddress);
+
+    navigation.reset({
+      index: 0,
+      routes: [
+        {
+          name: 'Home',
+          params: {
+            location: savedAddress,
+          },
+        },
+      ],
+    });
+  } catch (error) {
+    Alert.alert(
+      'Unable to save location',
+      'Please try selecting your location again.'
+    );
+  }
+};
 
   return (
     <View style={styles.container}>

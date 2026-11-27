@@ -86,7 +86,8 @@ export function validateCoupon(code, subtotal) {
     };
   }
 
-  if (new Date(offer.expiresAt).getTime() < Date.now()) {
+if (Date.now() > new Date(offer.expiresAt).getTime())
+         {
     return {
       valid: false,
       message: 'This coupon has expired.',

@@ -1,5 +1,4 @@
-
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from "react";
 import {
   Modal,
   View,
@@ -8,12 +7,18 @@ import {
   StyleSheet,
   Animated,
   Pressable,
-} from 'react-native';
-import { colors } from '../constants/colors';
+} from "react-native";
+import { colors } from "../constants/colors";
 
-const cuisines = ['All', 'Biryani', 'Pizza', 'South Indian', 'Chinese'];
-const prices = ['Any', 'Under ₹200', '₹200–₹400', 'Above ₹400'];
-const sorts = ['Relevance', 'Rating', 'Delivery time', 'Price: Low to High'];
+const cuisines = ["All", "Biryani", "Pizza", "South Indian", "Chinese"];
+const prices = ["Any", "Under ₹200", "₹200–₹400", "Above ₹400"];
+const sorts = [
+  "Relevance",
+  "Rating",
+  "Delivery time",
+  "Price: Low to High",
+  "Popular",
+];
 
 export default function FilterModal({
   visible,
@@ -21,9 +26,9 @@ export default function FilterModal({
   onApply,
   initialFilters,
 }) {
-  const [sort, setSort] = useState(initialFilters?.sort || 'Relevance');
-  const [cuisine, setCuisine] = useState(initialFilters?.cuisine || 'All');
-  const [price, setPrice] = useState(initialFilters?.price || 'Any');
+  const [sort, setSort] = useState(initialFilters?.sort || "Relevance");
+  const [cuisine, setCuisine] = useState(initialFilters?.cuisine || "All");
+  const [price, setPrice] = useState(initialFilters?.price || "Any");
   const [vegOnly, setVegOnly] = useState(initialFilters?.vegOnly || false);
 
   const slide = useRef(new Animated.Value(350)).current;
@@ -42,9 +47,9 @@ export default function FilterModal({
   }, [visible, slide]);
 
   const reset = () => {
-    setSort('Relevance');
-    setCuisine('All');
-    setPrice('Any');
+    setSort("Relevance");
+    setCuisine("All");
+    setPrice("Any");
     setVegOnly(false);
   };
 
@@ -61,7 +66,9 @@ export default function FilterModal({
               onPress={() => onSelect(option)}
               style={[styles.option, selected && styles.selectedOption]}
             >
-              <Text style={[styles.optionText, selected && styles.selectedText]}>
+              <Text
+                style={[styles.optionText, selected && styles.selectedText]}
+              >
                 {option}
               </Text>
             </TouchableOpacity>
@@ -83,10 +90,7 @@ export default function FilterModal({
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
 
         <Animated.View
-          style={[
-            styles.sheet,
-            { transform: [{ translateY: slide }] },
-          ]}
+          style={[styles.sheet, { transform: [{ translateY: slide }] }]}
         >
           <View style={styles.handle} />
 
@@ -130,7 +134,9 @@ export default function FilterModal({
               </Text>
             </View>
             <View style={[styles.toggle, vegOnly && styles.toggleActive]}>
-              <View style={[styles.toggleDot, vegOnly && styles.toggleDotActive]} />
+              <View
+                style={[styles.toggleDot, vegOnly && styles.toggleDotActive]}
+              />
             </View>
           </TouchableOpacity>
 
@@ -153,8 +159,8 @@ export default function FilterModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(25, 18, 39, 0.42)',
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(36, 20, 10, 0.42)",
   },
   sheet: {
     backgroundColor: colors.white,
@@ -168,34 +174,34 @@ const styles = StyleSheet.create({
     width: 42,
     height: 4,
     borderRadius: 5,
-    backgroundColor: '#D9D3E1',
-    alignSelf: 'center',
+    backgroundColor: colors.border,
+    alignSelf: "center",
     marginBottom: 18,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 14,
   },
   title: {
     fontSize: 21,
-    fontWeight: '900',
-    color: '#241B3D',
+    fontWeight: "900",
+    color: colors.ink,
   },
   reset: {
-    color: '#6336E8',
-    fontWeight: '800',
+    color: colors.orange,
+    fontWeight: "800",
     fontSize: 12,
   },
   group: { marginBottom: 18 },
   groupTitle: {
-    color: '#241B3D',
-    fontWeight: '800',
+    color: colors.ink,
+    fontWeight: "800",
     fontSize: 13,
     marginBottom: 10,
   },
-  options: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  options: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   option: {
     paddingHorizontal: 12,
     paddingVertical: 9,
@@ -204,43 +210,43 @@ const styles = StyleSheet.create({
     borderRadius: 18,
   },
   selectedOption: {
-    backgroundColor: '#F0E8FF',
-    borderColor: '#6336E8',
+    backgroundColor: colors.vanilla,
+    borderColor: colors.orange,
   },
-  optionText: { color: '#6F6880', fontSize: 11 },
-  selectedText: { color: '#6336E8', fontWeight: '800' },
+  optionText: { color: colors.muted, fontSize: 11 },
+  selectedText: { color: colors.orangeDeep, fontWeight: "800" },
   vegRow: {
     borderTopWidth: 1,
     borderTopColor: colors.border,
     paddingTop: 16,
     marginBottom: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   vegDescription: { fontSize: 10, color: colors.muted, marginTop: 3 },
   toggle: {
     width: 45,
     height: 25,
     borderRadius: 15,
-    backgroundColor: '#DDD8E5',
+    backgroundColor: colors.border,
     padding: 3,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
-  toggleActive: { backgroundColor: '#6336E8' },
+  toggleActive: { backgroundColor: colors.orange },
   toggleDot: {
     width: 19,
     height: 19,
     borderRadius: 10,
     backgroundColor: colors.white,
   },
-  toggleDotActive: { alignSelf: 'flex-end' },
+  toggleDotActive: { alignSelf: "flex-end" },
   applyButton: {
     height: 49,
     borderRadius: 15,
-    backgroundColor: '#6336E8',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: colors.orange,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  applyText: { color: colors.white, fontWeight: '900', fontSize: 13 },
+  applyText: { color: colors.white, fontWeight: "900", fontSize: 13 },
 });

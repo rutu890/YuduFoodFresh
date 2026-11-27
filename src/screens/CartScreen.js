@@ -69,13 +69,25 @@ export default function CartScreen({ navigation, route }) {
   };
 
   useEffect(() => {
-    const incomingCode = route?.params?.couponCode;
+  const incomingCode = route?.params?.couponCode;
 
-    if (incomingCode) {
-      setCoupon(incomingCode);
-      handleApplyCoupon(incomingCode);
-    }
-  }, [route?.params?.couponCode, subtotal]);
+  if (!incomingCode) return;
+
+  setCoupon(incomingCode.toUpperCase());
+
+  const result = validateCoupon(incomingCode, subtotal);
+
+  if (!result.valid) {
+    setAppliedOffer(null);
+    setCouponError(true);
+    setCouponMessage(result.message);
+    return;
+  }
+
+  setAppliedOffer(result.offer);
+  setCouponError(false);
+  setCouponMessage(result.message);
+}, [route?.params?.couponCode, subtotal]);
 
 
 

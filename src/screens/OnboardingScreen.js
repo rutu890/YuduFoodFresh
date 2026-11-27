@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 
 import { LinearGradient } from 'expo-linear-gradient';
-
+import { completeOnboarding } from '../utils/authStorage';
 import { colors } from '../constants/colors';
 import { onboardingSlides } from '../constants/onboardingSlides';
 
@@ -137,26 +137,35 @@ export default function OnboardingScreen({ navigation }) {
     }
   };
 
-  const handleNext = () => {
-    if (isLastSlide) {
-      navigation.replace('Location');
-      return;
-    }
+  const finishOnboarding = async () => {
+  try {
+    await completeOnboarding();
+  } catch (error) {
+    // Continue to Welcome even if storage fails.
+  }
 
-    const nextIndex = activeIndex + 1;
+  navigation.replace('Welcome');
+};
 
-    setActiveIndex(nextIndex);
+const handleNext = () => {
+  if (isLastSlide) {
+    finishOnboarding();
+    return;
+  }
 
-    listRef.current?.scrollToIndex({
-      index: nextIndex,
-      animated: true,
-      viewPosition: 0,
-    });
-  };
+  const nextIndex = activeIndex + 1;
 
-  const handleSkip = () => {
-    navigation.replace('Location');
-  };
+  setActiveIndex(nextIndex);
+
+  listRef.current?.scrollToIndex({
+    index: nextIndex,
+    animated: true,
+    viewPosition: 0,
+  });
+};
+ const handleSkip = () => {
+  finishOnboarding();
+};
 
   const handlePagination = (index) => {
     if (index < 0 || index >= onboardingSlides.length) return;
@@ -295,6 +304,7 @@ export default function OnboardingScreen({ navigation }) {
       {/* Swipeable Slides */}
       <FlatList
         ref={listRef}
+        style={{ flex: 1 }}
         data={onboardingSlides}
         renderItem={renderSlide}
         keyExtractor={(item) => item.id}
@@ -382,12 +392,12 @@ const styles = StyleSheet.create({
   width: '100%',
 },
 
-illustrationWrapper: {
-  height: '46%',
-  minHeight: 220,
-  paddingHorizontal: 22,
-  paddingTop: 45,
-},
+  illustrationWrapper: {
+    height: '46%',
+    minHeight: 220,
+    paddingHorizontal: 22,
+    paddingTop: 45,
+  },
 
   illustration: {
     flex: 1,

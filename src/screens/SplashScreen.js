@@ -15,6 +15,15 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import YuduLogo from '../components/YuduLogo';
 import { colors, gradients } from '../constants/colors';
+import {
+  hasCompletedOnboarding,
+  getRememberedSession,
+} from '../utils/authStorage';
+
+import {
+  getSavedAddresses,
+  getActiveAddress,
+} from '../utils/addressStorage';
 
 const { width, height } = Dimensions.get('window');
 
@@ -67,9 +76,42 @@ export default function SplashScreen({ navigation }) {
 
     floatAnimation.start();
 
-    const timer = setTimeout(() => {
-      navigation.replace('Onboarding');
-    }, 4500);
+   const timer = setTimeout(async () => {
+  try {
+    const session = await getRememberedSession();
+
+    if (session) {
+      const [activeAddress, savedAddresses] = await Promise.all([
+        getActiveAddress(),
+        getSavedAddresses(),
+      ]);
+
+      const selectedAddress =
+        activeAddress || savedAddresses[0] || null;
+
+      if (selectedAddress) {
+        navigation.replace('Home', {
+          location: selectedAddress,
+          user: session,
+        });
+      } else {
+        navigation.replace('Location', { user: session });
+      }
+
+      return;
+    }
+
+    const onboardingCompleted = await hasCompletedOnboarding();
+
+    navigation.replace(
+      onboardingCompleted ? 'Welcome' : 'Onboarding'
+    );
+  } catch (error) {
+    navigation.replace('Onboarding');
+  }
+}, 4500);
+
+return () => clearTimeout(timer);
 
     return () => {
       clearTimeout(timer);

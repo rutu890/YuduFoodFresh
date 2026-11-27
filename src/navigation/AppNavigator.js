@@ -21,6 +21,10 @@ import MapLocationPickerScreen from '../screens/MapLocationPickerScreen';
 import OrderUpdateDetailsScreen from '../screens/OrderUpdateDetailsScreen';
 import PaymentNotificationDetailsScreen
   from '../screens/PaymentNotificationDetailsScreen';
+import WelcomeScreen from '../screens/WelcomeScreen';
+import LoginScreen from '../screens/LoginScreen';
+import SignupScreen from '../screens/SignupScreen';
+import RememberMeScreen from '../screens/RememberMeScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -35,6 +39,10 @@ export default function AppNavigator() {
           name="ManualAddress"
           component={ManualAddressScreen}
         />
+        <Stack.Screen name="Welcome" component={WelcomeScreen} />
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Signup" component={SignupScreen} />
+        <Stack.Screen name="RememberMe" component={RememberMeScreen} />
         <Stack.Screen
           name="OrderUpdateDetails"
           component={OrderUpdateDetailsScreen}

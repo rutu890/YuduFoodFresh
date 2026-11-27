@@ -43,7 +43,7 @@ const foodImages = {
 // OFFER DATA
 // --------------------------------------------------
 
-const tabs = ['All', 'Gourmet', 'Store'];
+const tabs = ['All', 'Gourmet', 'Store', 'Coupons'];
 
 const foodDeals = [
   {
@@ -72,7 +72,7 @@ const foodDeals = [
     id: 'deal_3',
     name: 'Chicken Burger',
     restaurant: 'Burger House',
-    category: 'Store',
+    category: 'Gourmet',
     image: foodImages.burger,
     originalPrice: 149,
     dealPrice: 119,
@@ -83,7 +83,7 @@ const foodDeals = [
     id: 'deal_4',
     name: 'Masala Dosa',
     restaurant: 'South Kitchen',
-    category: 'Store',
+    category: 'Gourmet',
     image: foodImages.dosa,
     originalPrice: 99,
     dealPrice: 79,
@@ -100,6 +100,52 @@ const foodDeals = [
     dealPrice: 179,
     rating: '4.6',
     discount: 'SAVE ₹41',
+  },
+
+];
+
+const restaurantOffers = [
+  {
+    id: 'restaurant_1',
+    restaurant: 'Spice Garden',
+    title: 'Restaurant Special',
+    description: 'Flat 20% OFF on your entire order',
+    offer: '20% OFF',
+    minimumOrder: 299,
+    maximumDiscount: 100,
+    category: 'Store',
+    image: foodImages.biryani,
+    validUntil: '31 Dec 2026',
+    type: 'Restaurant-wide',
+    gradient: [colors.teal, colors.tealDeep],
+  },
+  {
+    id: 'restaurant_2',
+    restaurant: 'Pizza Corner',
+    title: 'Family Combo Deal',
+    description: 'Special prices on selected family combos',
+    offer: 'COMBO DEAL',
+    minimumOrder: 399,
+    maximumDiscount: 150,
+    category: 'Store',
+    image: foodImages.pizza,
+    validUntil: '15 Dec 2026',
+    type: 'Combo offer',
+    gradient: [colors.orange, colors.orangeDeep],
+  },
+  {
+    id: 'restaurant_3',
+    restaurant: 'Burger House',
+    title: 'Free Delivery',
+    description: 'Free delivery on orders above ₹249',
+    offer: 'FREE DELIVERY',
+    minimumOrder: 249,
+    maximumDiscount: 30,
+    category: 'Store',
+    image: foodImages.burger,
+    validUntil: '20 Dec 2026',
+    type: 'Delivery promotion',
+    gradient: [colors.blue, colors.blueDeep],
   },
 ];
 
@@ -343,6 +389,89 @@ function BrandDealCard({ item, cardWidth, onPress }) {
   );
 }
 
+
+function RestaurantOfferCard({ item, onPress }) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  return (
+    <Animated.View
+      style={{
+        transform: [{ scale }],
+        marginRight: 12,
+        width: 245,
+      }}
+    >
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={onPress}
+        onPressIn={() =>
+          Animated.spring(scale, {
+            toValue: 0.97,
+            useNativeDriver: true,
+          }).start()
+        }
+        onPressOut={() =>
+          Animated.spring(scale, {
+            toValue: 1,
+            useNativeDriver: true,
+          }).start()
+        }
+        style={styles.restaurantOfferCard}
+      >
+        <Image
+          source={{ uri: item.image }}
+          style={styles.restaurantOfferImage}
+        />
+
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.82)']}
+          style={styles.restaurantImageOverlay}
+        >
+          <Text style={styles.restaurantOfferTag}>
+            RESTAURANT INITIATIVE
+          </Text>
+          <Text style={styles.restaurantOfferValue}>
+            {item.offer}
+          </Text>
+        </LinearGradient>
+
+        <View style={styles.restaurantOfferContent}>
+          <Text style={styles.restaurantOfferTitle}>
+            {item.title}
+          </Text>
+
+          <Text style={styles.restaurantOfferDescription}>
+            {item.description}
+          </Text>
+
+          <View style={styles.restaurantOfferMeta}>
+            <Text style={styles.restaurantOfferMinimum}>
+              Min. order ₹{item.minimumOrder}
+            </Text>
+
+            <Text style={styles.restaurantOfferExpiry}>
+              Till {item.validUntil}
+            </Text>
+          </View>
+
+          <View style={styles.restaurantOfferFooter}>
+            <Text style={styles.restaurantOfferName}>
+              {item.restaurant}
+            </Text>
+
+            <Ionicons
+              name="arrow-forward-circle"
+              size={22}
+              color={colors.orange}
+            />
+          </View>
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
+
 // --------------------------------------------------
 // TRENDING DEAL CARD
 // --------------------------------------------------
@@ -486,8 +615,7 @@ export default function OffersScreen({ navigation }) {
   // On a 378px phone, food cards are approximately 145px.
   // On wider screens, the cards grow but remain controlled.
 
-  const horizontalPadding = 15;
-  const availableWidth = width - horizontalPadding * 2;
+
 
   const foodCardWidth = Math.min(
     170,
@@ -504,33 +632,37 @@ export default function OffersScreen({ navigation }) {
     Math.max(100, width * 0.28)
   );
 
+  // GOURMET: Individual food and meal deals
   const filteredFoodDeals = useMemo(() => {
-    if (activeTab === 'All') return foodDeals;
-
-    return foodDeals.filter((item) => item.category === activeTab);
+    return activeTab === 'All' || activeTab === 'Gourmet'
+      ? foodDeals
+      : [];
   }, [activeTab]);
 
+  // STORE: Restaurant-initiated promotions
+  const filteredRestaurantOffers = useMemo(() => {
+    return activeTab === 'All' || activeTab === 'Store'
+      ? restaurantOffers
+      : [];
+  }, [activeTab]);
+
+  // Gourmet brand promotions
   const filteredBrandDeals = useMemo(() => {
-    if (activeTab === 'All') return brandDeals;
-
-    return brandDeals.filter((item) =>
-      activeTab === 'Gourmet'
-        ? ['Pizza Specials', 'Biryani Treats'].includes(item.name)
-        : item.name === 'Burger Festival'
-    );
+    return activeTab === 'All' || activeTab === 'Gourmet'
+      ? brandDeals
+      : [];
   }, [activeTab]);
 
+  // Gourmet trending food deals
   const filteredTrending = useMemo(() => {
-    if (activeTab === 'All') return trendingDeals;
-
-    return trendingDeals.filter((item) => {
-      if (activeTab === 'Gourmet') {
-        return ['Pizza specials', 'Biryani deals'].includes(item.name);
-      }
-
-      return ['Burger combos', 'South Indian'].includes(item.name);
-    });
+    return activeTab === 'All' || activeTab === 'Gourmet'
+      ? trendingDeals
+      : [];
   }, [activeTab]);
+
+  // Coupons appear in All and Coupons
+  const showCoupons =
+    activeTab === 'All' || activeTab === 'Coupons';
 
   useEffect(() => {
     return () => {
@@ -642,7 +774,6 @@ export default function OffersScreen({ navigation }) {
         </View>
       </View>
 
-      {/* ONLY THREE TABS */}
 
       <View style={styles.tabsContainer}>
         {tabs.map((tab) => {
@@ -660,8 +791,10 @@ export default function OffersScreen({ navigation }) {
                   tab === 'All'
                     ? 'grid-outline'
                     : tab === 'Gourmet'
-                    ? 'restaurant-outline'
-                    : 'storefront-outline'
+                      ? 'restaurant-outline'
+                      : tab === 'Store'
+                        ? 'storefront-outline'
+                        : 'ticket-outline'
                 }
                 size={13}
                 color={selected ? colors.orange : colors.muted}
@@ -748,150 +881,188 @@ export default function OffersScreen({ navigation }) {
 
         {/* FOOD DEALS */}
 
-        <SectionHeader
-          title="Meals at ₹99 & more"
-          action="View all"
-          onPress={openRestaurants}
-        />
 
-        {filteredFoodDeals.length > 0 ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalList}
-          >
-            {filteredFoodDeals.map((item) => (
-              <FoodDealCard
-                key={item.id}
-                item={item}
-                cardWidth={foodCardWidth}
-                onPress={openRestaurants}
-              />
-            ))}
-          </ScrollView>
-        ) : (
-          <Text style={styles.emptyText}>
-            More food deals are coming soon.
-          </Text>
+        {/* GOURMET FOOD DEALS */}
+
+        {(activeTab === 'All' || activeTab === 'Gourmet') && (
+          <>
+            <SectionHeader
+              title="Meals at ₹99 & more"
+              action="View all"
+              onPress={openRestaurants}
+            />
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalList}
+            >
+              {filteredFoodDeals.map((item) => (
+                <FoodDealCard
+                  key={item.id}
+                  item={item}
+                  cardWidth={foodCardWidth}
+                  onPress={openRestaurants}
+                />
+              ))}
+            </ScrollView>
+          </>
         )}
 
         {/* PROMOTIONAL STRIP */}
+        {activeTab === 'All' && (
+          <>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={openRestaurants}
+              style={styles.promoWrapper}
+            >
+              <LinearGradient
+                colors={[colors.blue, colors.blueDeep]}
+                style={styles.promoBanner}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.promoEyebrow}>YUDU FOOD FEST</Text>
+                  <Text style={styles.promoTitle}>
+                    More flavours. More savings.
+                  </Text>
+                  <Text style={styles.promoSubtitle}>
+                    Find your next favourite meal.
+                  </Text>
+                </View>
 
-        <TouchableOpacity
-          activeOpacity={0.9}
-          onPress={openRestaurants}
-          style={styles.promoWrapper}
-        >
-          <LinearGradient
-            colors={[colors.blue, colors.blueDeep]}
-            style={styles.promoBanner}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={styles.promoEyebrow}>YUDU FOOD FEST</Text>
-              <Text style={styles.promoTitle}>
-                More flavours. More savings.
-              </Text>
-              <Text style={styles.promoSubtitle}>
-                Find your next favourite meal.
-              </Text>
-            </View>
+                <View style={styles.promoIcon}>
+                  <Ionicons
+                    name="fast-food"
+                    size={39}
+                    color={colors.white}
+                  />
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+          </>
+        )}
 
-            <View style={styles.promoIcon}>
-              <Ionicons
-                name="fast-food"
-                size={39}
-                color={colors.white}
-              />
-            </View>
-          </LinearGradient>
-        </TouchableOpacity>
+        {activeTab === 'All' || activeTab === 'Store' ? (
+          <>
+            <SectionHeader
+              title="Restaurant specials"
+              action="Explore"
+              onPress={openRestaurants}
+            />
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalList}
+            >
+              {filteredRestaurantOffers.map((item) => (
+                <RestaurantOfferCard
+                  key={item.id}
+                  item={item}
+                  onPress={openRestaurants}
+                />
+              ))}
+            </ScrollView>
+          </>
+        ) : null}
 
         {/* BRAND DEALS */}
 
-        <SectionHeader
-          title="Brands with top deals"
-          action="See all"
-          onPress={openRestaurants}
-        />
+        {/* BRAND DEALS */}
 
-        {filteredBrandDeals.length > 0 ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalList}
-          >
-            {filteredBrandDeals.map((item) => (
-              <BrandDealCard
-                key={item.id}
-                item={item}
-                cardWidth={brandCardWidth}
-                onPress={openRestaurants}
-              />
-            ))}
-          </ScrollView>
-        ) : (
-          <Text style={styles.emptyText}>
-            No brand deals in this section yet.
-          </Text>
+        {(activeTab === 'All' || activeTab === 'Gourmet') && (
+          <>
+            <SectionHeader
+              title="Brands with top deals"
+              action="See all"
+              onPress={openRestaurants}
+            />
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalList}
+            >
+              {filteredBrandDeals.map((item) => (
+                <BrandDealCard
+                  key={item.id}
+                  item={item}
+                  cardWidth={brandCardWidth}
+                  onPress={openRestaurants}
+                />
+              ))}
+            </ScrollView>
+          </>
         )}
 
         {/* TRENDING DEALS */}
 
-        <SectionHeader
-          title="Try new deals"
-          action="See all"
-          onPress={openRestaurants}
-        />
+        {/* TRENDING DEALS */}
 
-        {filteredTrending.length > 0 ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalList}
-          >
-            {filteredTrending.map((item) => (
-              <TrendingCard
-                key={item.id}
-                item={item}
-                cardWidth={trendingCardWidth}
-                favorite={favorites.includes(item.id)}
-                onFavorite={() => toggleFavorite(item.id)}
-                onPress={openRestaurants}
-              />
-            ))}
-          </ScrollView>
-        ) : (
-          <Text style={styles.emptyText}>
-            New deals will appear here soon.
-          </Text>
+        {(activeTab === 'All' || activeTab === 'Gourmet') && (
+          <>
+            <SectionHeader
+              title="Try new deals"
+              action="See all"
+              onPress={openRestaurants}
+            />
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalList}
+            >
+              {filteredTrending.map((item) => (
+                <TrendingCard
+                  key={item.id}
+                  item={item}
+                  cardWidth={trendingCardWidth}
+                  favorite={favorites.includes(item.id)}
+                  onFavorite={() => toggleFavorite(item.id)}
+                  onPress={openRestaurants}
+                />
+              ))}
+            </ScrollView>
+          </>
         )}
+
+
 
         {/* COUPONS */}
 
-        <SectionHeader title="Coupons & extra savings" />
+        {showCoupons && (
+          <>
+            <SectionHeader
+              title="Coupons & extra savings"
+            />
 
-        {couponOffers.map((offer) => (
-          <CouponCard
-            key={offer.id}
-            item={offer}
-            onCopy={handleCopy}
-            onUse={handleUseOffer}
-          />
-        ))}
+            {couponOffers.map((offer) => (
+              <CouponCard
+                key={offer.id}
+                item={offer}
+                onCopy={handleCopy}
+                onUse={handleUseOffer}
+              />
+            ))}
+          </>
+        )}
 
-        <View style={styles.bottomTip}>
-          <Ionicons
-            name="information-circle-outline"
-            size={19}
-            color={colors.teal}
-          />
+        {showCoupons && (
+          <View style={styles.bottomTip}>
+            <Ionicons
+              name="information-circle-outline"
+              size={19}
+              color={colors.teal}
+            />
 
-          <Text style={styles.bottomTipText}>
-            Offers may have minimum order values, usage limits and
-            restaurant-specific eligibility. Check the coupon details
-            before applying.
-          </Text>
-        </View>
+            <Text style={styles.bottomTipText}>
+              Offers may have minimum order values, usage limits and
+              restaurant-specific eligibility. Check the coupon details
+              before applying.
+            </Text>
+          </View>
+        )}
       </ScrollView>
 
       {/* COPY SUCCESS TOAST */}
@@ -1618,5 +1789,92 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: 10,
     fontWeight: '800',
+  },
+  restaurantOfferCard: {
+    backgroundColor: colors.white,
+    borderRadius: 17,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+
+  restaurantOfferImage: {
+    width: '100%',
+    height: 135,
+    backgroundColor: colors.soft,
+  },
+
+  restaurantImageOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 135,
+    justifyContent: 'flex-end',
+    padding: 12,
+  },
+
+  restaurantOfferTag: {
+    color: colors.mango,
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+  },
+
+  restaurantOfferValue: {
+    color: colors.white,
+    fontSize: 20,
+    fontWeight: '900',
+    marginTop: 4,
+  },
+
+  restaurantOfferContent: {
+    padding: 12,
+  },
+
+  restaurantOfferTitle: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: colors.ink,
+  },
+
+  restaurantOfferDescription: {
+    fontSize: 10,
+    lineHeight: 15,
+    color: colors.muted,
+    marginTop: 5,
+  },
+
+  restaurantOfferMeta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+
+  restaurantOfferMinimum: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.teal,
+  },
+
+  restaurantOfferExpiry: {
+    fontSize: 9,
+    color: colors.muted,
+  },
+
+  restaurantOfferFooter: {
+    borderTopWidth: 1,
+    borderColor: colors.border,
+    marginTop: 10,
+    paddingTop: 9,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  restaurantOfferName: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: colors.ink,
   },
 });
